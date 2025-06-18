@@ -1,0 +1,29 @@
+/* src/index.css */
+@import "tailwindcss";
+
+@config './../tailwind.config.js';
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+  body {
+    @apply bg-dark text-text-primary antialiased;
+  }
+}
+
+@layer utilities {
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+  }
+}
+
+/* SwiperJS Custom Styles */
+.swiper-pagination-bullet {
+    @apply bg-text-secondary opacity-70;
+}
+
+.swiper-pagination-bullet-active {
+    @apply bg-primary opacity-100;
+}
+
