@@ -83,9 +83,9 @@ const Hero = () => (
 
 
 const plansData = [
-  { title: 'Starter Pool', price: '50', features: ['Up to 5 members', 'Monthly Payouts', 'Basic Vetting', 'Email Support'], isPopular: false },
-  { title: 'Growth Pool', price: '250', features: ['Up to 10 members', 'Flexible Payout Schedule', 'Enhanced Vetting', 'Priority Support', 'Financial Tracking Tools'], isPopular: true },
-  { title: 'Venture Pool', price: '1000', features: ['Up to 15 members', 'Custom Payout Options', 'Comprehensive Vetting', 'Dedicated Account Manager', 'Investment Opportunities'], isPopular: false },
+  { title: 'Starter Pool', price: '50,000', features: ['Up to 5 members', 'Monthly Payouts', 'Basic Vetting', 'Email Support'], isPopular: false },
+  { title: 'Growth Pool', price: '100,000', features: ['Up to 10 members', 'Flexible Payout Schedule', 'Enhanced Vetting', 'Priority Support', 'Financial Tracking Tools'], isPopular: true },
+  { title: 'Venture Pool', price: '500,000', features: ['Up to 15 members', 'Custom Payout Options', 'Comprehensive Vetting', 'Dedicated Account Manager', 'Investment Opportunities'], isPopular: false },
 ];
 
 const Plans = () => (
@@ -103,7 +103,7 @@ const Plans = () => (
             {plan.isPopular && <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-secondary text-white px-4 py-1.5 rounded-full text-xs font-bold font-heading">MOST POPULAR</div>}
             <h3 className="font-heading text-2xl font-bold text-center mb-2">{plan.title}</h3>
             <div className="text-center mb-6">
-              <span className="font-heading text-5xl font-bold">${plan.price}</span>
+              <span className="font-heading text-5xl font-bold">N{plan.price}</span>
               <span className="text-text-secondary">/month</span>
             </div>
             <ul className="space-y-4 mb-8 flex-grow">
@@ -125,10 +125,10 @@ const Plans = () => (
 
 const HowItWorks = () => {
     const steps = [
-        { icon: <FiUsers />, title: 'Form a Circle', description: 'Join a public circle or invite trusted friends to a private one.' },
-        { icon: <FiLogIn />, title: 'Contribute Funds', description: 'Each member contributes a fixed amount into the shared pool every month.' },
-        { icon: <FiRepeat />, title: 'Rotate Payouts', description: 'One member receives the full lump sum each month, until everyone has had a turn.' },
-        { icon: <FiGift />, title: 'Fuel Your Dreams', description: 'Use your interest-free capital to achieve your personal or business goals.' },
+        { icon: <FiUsers color='white'/>, title: 'Form a Circle', description: 'Join a public circle or invite trusted friends to a private one.' },
+        { icon: <FiLogIn color='white'/>, title: 'Contribute Funds', description: 'Each member contributes a fixed amount into the shared pool every month.' },
+        { icon: <FiRepeat color='white'/>, title: 'Rotate Payouts', description: 'One member receives the full lump sum each month, until everyone has had a turn.' },
+        { icon: <FiGift color='white'/>, title: 'Fuel Your Dreams', description: 'Use your interest-free capital to achieve your personal or business goals.' },
     ];
     return (
         <section id="how-it-works" className="py-20 bg-light">
