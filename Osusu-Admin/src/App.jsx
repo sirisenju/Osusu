@@ -1,13 +1,18 @@
-import Dashboard from "./pages/UI/dashboard"
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Login from "./pages/Auth/login";
+import Dashboard from "./pages/UI/dashboard";
 
 
 function App() {
-
   return (
-    <>
-      <Dashboard/>
-    </>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="*" element={<Login />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;

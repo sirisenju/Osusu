@@ -1,7 +1,15 @@
 import React from 'react'
 import { FaBeer, FaHome, FaHouseUser, FaSearch, FaBars } from "react-icons/fa";
+import supabase from "@/lib/supabase";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 function Header({ onToggleSidebar }) {
+  const navigate = useNavigate();
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/login");
+  };
   return (
     <div className='h-[50px] bg-white w-full flex justify-between items-center p-2'>
         <div className='flex gap-2'>
@@ -14,6 +22,7 @@ function Header({ onToggleSidebar }) {
             <button onClick={onToggleSidebar} className='ml-2 p-2 rounded-full hover:bg-gray-200 transition-colors'>
               <FaBars size={20} />
             </button>
+            <Button onClick={handleLogout} className='ml-4'>Logout</Button>
         </div>
     </div>
   )

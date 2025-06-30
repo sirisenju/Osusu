@@ -1,5 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Header from '../../components/header'
+import { useNavigate, useLocation } from 'react-router-dom'
+import supabase from '@/lib/supabase'
 
 const sidebarItems = [
   { key: 'overview', label: 'Overview' },
@@ -11,6 +13,19 @@ const sidebarItems = [
 function Dashboard() {
   const [activeSection, setActiveSection] = useState('overview');
   const [showRightSidebar, setShowRightSidebar] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const role = location.state?.role || 'admin'; // fallback if not provided
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/login');
+      }
+    };
+    checkSession();
+  }, [navigate]);
 
   const renderSection = () => {
     switch (activeSection) {
@@ -54,6 +69,7 @@ function Dashboard() {
       <div className={`${mainAreaWidth} bg-yellow-500`}>
         <Header onToggleSidebar={() => setShowRightSidebar(v => !v)} />
         <div className='p-6'>
+          <div className='mb-4'>Logged in as: <span className='font-bold'>{role}</span></div>
           {renderSection()}
         </div>
       </div>
