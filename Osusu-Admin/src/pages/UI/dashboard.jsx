@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react'
 import Header from '../../components/header'
 import { useNavigate, useLocation } from 'react-router-dom'
 import supabase from '@/lib/supabase'
+import Overview from './Views/overview';
+import UsersPage from './Views/users';
+import GroupView from './Views/Group/groupView';
+import { Button } from '@/components/ui/button';
 
 const sidebarItems = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'transactions', label: 'Transactions' },
-  { key: 'members', label: 'Members' },
+  { key: 'overview', label: 'Home' },
+  { key: 'users', label: 'Users' },
+  { key: 'group', label: 'Create Group' },
   { key: 'settings', label: 'Settings' },
 ];
 
@@ -30,11 +34,11 @@ function Dashboard() {
   const renderSection = () => {
     switch (activeSection) {
       case 'overview':
-        return <div>Overview content goes here.</div>;
-      case 'transactions':
-        return <div>Transactions content goes here.</div>;
-      case 'members':
-        return <div>Members content goes here.</div>;
+        return <Overview/>;
+      case 'users':
+        return <UsersPage/>;
+      case 'group':
+        return <GroupView/>;
       case 'settings':
         return <div>Settings content goes here.</div>;
       default:
