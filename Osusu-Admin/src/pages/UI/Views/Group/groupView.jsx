@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -265,7 +266,7 @@ function GroupView() {
         .select(`
           slot_number,
           payment_verified,
-          profiles:user_id (
+          profiles:group_members_user_id_fkey (
             first_name,
             last_name,
             email,
@@ -275,8 +276,11 @@ function GroupView() {
         .eq("group_id", group.id)
         .order("slot_number", { ascending: true });
         console.log("Fetching group members for:", group.id);
+        console.log("Fetched members:", data);
+        console.log("Error:", error);
       if (!error && data) {
         setGroupMembersMap(prev => ({ ...prev, [group.id]: data }));
+        console.log("Group members updated:", group.id, data);
       }
     }
 
@@ -584,7 +588,7 @@ function GroupView() {
                             Email: {member.profiles?.email || "N/A"}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            Phone: {member.profiles?.phone || "N/A"}
+                            Phone: {member.profiles?.phone_number || "N/A"}
                           </div>
                           <div className="text-xs">
                             Slot: <span className="font-semibold">{member.slot_number}</span>
