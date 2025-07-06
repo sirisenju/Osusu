@@ -1,5 +1,7 @@
+/* eslint-disable no-unused-vars */
 // src/App.js
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination } from 'swiper/modules';
@@ -8,8 +10,7 @@ import { FaQuoteLeft } from 'react-icons/fa';
 
 import 'swiper/css';
 import 'swiper/css/pagination';
-
-// import heroBg from './assets/hero-bg.jpg';
+import LoginPage from './pages/auth/LoginPage';
 
 // --- ANIMATION VARIANTS ---
 const fadeIn = {
@@ -41,24 +42,32 @@ const CTAButton = ({ children, className }) => (
 );
 
 
-const Navbar = () => (
-  <motion.nav
-    className="fixed w-full top-0 left-0 z-50 bg-dark/50 backdrop-blur-lg border-b border-white/5"
-    initial={{ y: -100 }}
-    animate={{ y: 0 }}
-    transition={{ duration: 0.5 }}
-  >
-    <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-      <div className="font-heading text-2xl font-bold gradient-text">OSUSU</div>
-      <ul className="hidden md:flex items-center gap-8 font-body font-medium text-text-secondary">
-        <li><a href="#how-it-works" className="hover:text-text-primary transition-colors">How It Works</a></li>
-        <li><a href="#plans" className="hover:text-text-primary transition-colors">Plans</a></li>
-        <li><a href="#faq" className="hover:text-text-primary transition-colors">FAQ</a></li>
-      </ul>
-      <CTAButton>Join Now</CTAButton>
-    </div>
-  </motion.nav>
-);
+const Navbar = () => {
+  const navigate = useNavigate();
+  return (
+    <motion.nav
+      className="fixed w-full top-0 left-0 z-50 bg-dark/50 backdrop-blur-lg border-b border-white/5"
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+        <div className="font-heading text-2xl font-bold gradient-text">OSUSU</div>
+        <ul className="hidden md:flex items-center gap-8 font-body font-medium text-text-secondary">
+          <li><a href="#how-it-works" className="hover:text-text-primary transition-colors">How It Works</a></li>
+          <li><a href="#plans" className="hover:text-text-primary transition-colors">Plans</a></li>
+          <li><a href="#faq" className="hover:text-text-primary transition-colors">FAQ</a></li>
+        </ul>
+        <div className="flex gap-4">
+          <button className='bg-gradient-to-r from-primary to-secondary text-white font-heading font-semibold px-7 py-2 rounded-full transition-transform duration-300' onClick={() => navigate('/login')}>
+            Login
+          </button>
+          <CTAButton>Join Now</CTAButton>
+        </div>
+      </div>
+    </motion.nav>
+  );
+};
 
 const Hero = () => (
   <section id="home" className="min-h-screen flex items-center justify-center relative bg-cover bg-center bg-fixed" style={{ backgroundImage: `url(./assets/investment-coins.jpg)` }}>
@@ -73,6 +82,7 @@ const Hero = () => (
             Welcome to OSUSU, the digital group savings platform. Pool funds with your trusted circle, access interest-free capital, and accelerate your financial ambitions.
           </motion.p>
           <motion.div variants={fadeIn}>
+            <CTAButton className="mr-4">Get Started</CTAButton>
             <CTAButton>Explore Pooling Plans</CTAButton>
           </motion.div>
         </GlassCard>
@@ -266,18 +276,28 @@ const FloatingChat = () => (
 
 function App() {
   return (
-    <div>
+    <Router>
       <Navbar />
-      <main>
-        <Hero />
-        <HowItWorks />
-        <Plans />
-        <Testimonials />
-        <FAQ />
-      </main>
-      <Footer />
-      <FloatingChat />
-    </div>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <>
+              <main>
+                <Hero />
+                <HowItWorks />
+                <Plans />
+                <Testimonials />
+                <FAQ />
+              </main>
+              <Footer />
+              <FloatingChat />
+            </>
+          }
+        />
+        <Route path="/login" element={<LoginPage/>} />
+      </Routes>
+    </Router>
   );
 }
 
