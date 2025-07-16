@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import Header from '../../components/header'
 import { useNavigate, useLocation } from 'react-router-dom'
-import supabase from '@/lib/supabase'
-import Overview from './Views/overview';
+import supabase from '@/lib/supabase';
 import UsersPage from './Views/users';
 import GroupView from './Views/Group/groupView';
 import { Button } from '@/components/ui/button';
+import Overview from './Views/AdminOverview/overview';
 
 const sidebarItems = [
   { key: 'overview', label: 'Home' },
@@ -34,7 +34,7 @@ function Dashboard() {
   const renderSection = () => {
     switch (activeSection) {
       case 'overview':
-        return <Overview/>;
+        return <Overview userRole={role}/>;
       case 'users':
         return <UsersPage/>;
       case 'group':
@@ -51,7 +51,7 @@ function Dashboard() {
 
   return (
     <div className='w-full h-screen flex'>
-      <div className='w-[20%] bg-green-400 flex flex-col'>
+      <div className='w-[20%] bg-[#FFFFFF] flex flex-col'>
         <div className='p-4'>
           <h1 className='text-3xl font-medium'>Choco Osusu</h1>
           <p>Your money is safe with us...</p>
@@ -70,10 +70,9 @@ function Dashboard() {
           ))}
         </div>
       </div>
-      <div className={`${mainAreaWidth} bg-yellow-500`}>
+      <div className={`${mainAreaWidth} bg-[#F5F6FA]`}>
         <Header onToggleSidebar={() => setShowRightSidebar(v => !v)} />
-        <div className='p-6'>
-          <div className='mb-4'>Logged in as: <span className='font-bold'>{role}</span></div>
+        <div className='p-4'>
           {renderSection()}
         </div>
       </div>

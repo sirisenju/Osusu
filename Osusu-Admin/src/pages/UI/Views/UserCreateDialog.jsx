@@ -42,21 +42,44 @@ export default function UserCreateDialog({ onUserCreated }) {
     setStep(1)
   }
 
-  const handleSignup = async (e) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password })
-    if (signUpError) {
-      setError(signUpError.message)
-      toast.error(signUpError.message)
-      setLoading(false)
-      return
+ const handleSignup = async (e) => {
+  e.preventDefault()
+  setError('')
+  setLoading(true)
+
+  try {
+    const session = await supabase.auth.getSession()
+    const token = session.data.session?.access_token
+
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        email,
+        password
+      })
+    })
+
+    const result = await response.json()
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Something went wrong')
     }
-    setUserId(data.user.id)
+    // Optional: store new user ID
+    setUserId(result.user.id)
     setStep(2)
+    toast.success('User created successfully!')
+  } catch (err) {
+    setError(err.message)
+    toast.error(err.message)
+  } finally {
     setLoading(false)
   }
+}
+
 
   const handleProfile = async (e) => {
     e.preventDefault()
