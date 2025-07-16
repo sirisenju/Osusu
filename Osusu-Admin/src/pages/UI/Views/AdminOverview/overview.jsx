@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { Button } from '@/components/ui/button'
 import { User, Users, Group } from 'lucide-react'
 import React, { useState, useEffect } from 'react'
