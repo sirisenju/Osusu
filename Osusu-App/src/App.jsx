@@ -10,7 +10,8 @@ import { FaQuoteLeft } from 'react-icons/fa';
 
 import 'swiper/css';
 import 'swiper/css/pagination';
-import LoginPage from './pages/auth/LoginPage';
+import LoginPage from './pages/Auth/LoginPage';
+import UserDashBoard from './pages/userDashBoard';
 
 // --- ANIMATION VARIANTS ---
 const fadeIn = {
@@ -52,7 +53,7 @@ const Navbar = () => {
       transition={{ duration: 0.5 }}
     >
       <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-        <div className="font-heading text-2xl font-bold gradient-text">OSUSU</div>
+        <div className="font-heading text-2xl font-bold gradient-text">Choco Osusu</div>
         <ul className="hidden md:flex items-center gap-8 font-body font-medium text-text-secondary">
           <li><a href="#how-it-works" className="hover:text-text-primary transition-colors">How It Works</a></li>
           <li><a href="#plans" className="hover:text-text-primary transition-colors">Plans</a></li>
@@ -295,6 +296,7 @@ function App() {
             </>
           }
         />
+        <Route path='/dashboard' element={<UserDashBoard/>}/>
         <Route path="/login" element={<LoginPage/>} />
       </Routes>
     </Router>

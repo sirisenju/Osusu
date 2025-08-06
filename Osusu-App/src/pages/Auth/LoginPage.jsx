@@ -1,6 +1,8 @@
+/* eslint-disable no-unused-vars */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import supabase from '../../lib/supabase';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 30 },
@@ -28,18 +30,40 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    // TODO: Add real authentication logic here
+    setLoading(true);
     if (!email || !password) {
       setError('Please enter both email and password.');
+      setLoading(false);
       return;
     }
-    // Simulate login success
-    navigate('/');
+    // Supabase login
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInError) {
+      setError(signInError.message);
+      setLoading(false);
+      return;
+    }
+    // Check if user exists in profiles table
+    const userId = data.user.id;
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .single();
+    if (profileError || !profile) {
+      setError('Access denied: No profile found.');
+      setLoading(false);
+      return;
+    }
+    // Optionally, store session token or user info here
+    setLoading(false);
+    navigate('/dashboard');
   };
 
   return (
@@ -54,7 +78,7 @@ const LoginPage = () => {
                 <label className="block mb-2 font-medium">Email</label>
                 <input
                   type="email"
-                  className="w-full px-4 py-3 rounded-lg bg-white/80 border border-white/20 focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-3 text-black rounded-lg bg-white/80 border border-white/20 focus:outline-none focus:ring-2 focus:ring-primary"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   required
@@ -65,7 +89,7 @@ const LoginPage = () => {
                 <label className="block mb-2 font-medium">Password</label>
                 <input
                   type="password"
-                  className="w-full px-4 py-3 rounded-lg bg-white/80 border border-white/20 focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-4 py-3 text-black rounded-lg bg-white/80 border border-white/20 focus:outline-none focus:ring-2 focus:ring-primary"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   required
@@ -73,7 +97,9 @@ const LoginPage = () => {
                 />
               </div>
               {error && <div className="text-red-500 text-sm">{error}</div>}
-              <CTAButton type="submit" className="w-full mt-2">Login</CTAButton>
+              <CTAButton type="submit" className="w-full mt-2" disabled={loading}>
+                {loading ? 'Logging in...' : 'Login'}
+              </CTAButton>
             </form>
             <div className="text-center mt-6 text-text-secondary">
               Don&apos;t have an account? <a href="#" className="text-primary font-semibold">Contact Admin</a>
