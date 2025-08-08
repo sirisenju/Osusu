@@ -71,38 +71,86 @@ export default function EditAccountDialog({ user, onClose, onAccountUpdated }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-md w-full">
+      <DialogContent className="max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Account for {user.first_name} {user.last_name}</DialogTitle>
+          <DialogTitle className="text-lg">
+            Edit Account for {user.first_name} {user.last_name}
+          </DialogTitle>
           <DialogClose asChild>
-            <button onClick={() => { setOpen(false); if (onClose) onClose(); }} className="absolute top-2 right-2 text-gray-500 hover:text-black">&times;</button>
+            <button 
+              onClick={() => { setOpen(false); if (onClose) onClose(); }} 
+              className="absolute top-3 right-3 text-gray-500 hover:text-black text-xl leading-none"
+            >
+              &times;
+            </button>
           </DialogClose>
         </DialogHeader>
-        {error && <div className="mb-4 text-red-500">{error}</div>}
+        
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+        
         {loading ? (
-          <div>Loading...</div>
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Loading account...</span>
+          </div>
         ) : (
           <form onSubmit={handleUpdate} className="space-y-4">
             <div>
-              <label className="mb-1 font-medium">Account Number</label>
-              <Input value={accountNumber} onChange={e => setAccountNumber(e.target.value)} required placeholder="Account Number" />
+              <label className="mb-2 font-medium text-sm">Account Number</label>
+              <Input 
+                value={accountNumber} 
+                onChange={e => setAccountNumber(e.target.value)} 
+                required 
+                placeholder="Enter account number"
+                className="w-full" 
+              />
             </div>
+            
             <div>
-              <label className="mb-1 font-medium">Bank Name</label>
-              <Input value={bankName} onChange={e => setBankName(e.target.value)} required placeholder="Bank Name" />
+              <label className="mb-2 font-medium text-sm">Bank Name</label>
+              <Input 
+                value={bankName} 
+                onChange={e => setBankName(e.target.value)} 
+                required 
+                placeholder="Enter bank name"
+                className="w-full" 
+              />
             </div>
+            
             <div>
-              <label className="mb-1 font-medium">Status</label>
-              <RadioGroup value={status} onValueChange={setStatus} className="flex flex-col gap-2">
+              <label className="mb-3 font-medium text-sm">Account Status</label>
+              <RadioGroup 
+                value={status} 
+                onValueChange={setStatus} 
+                className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+              >
                 {STATUS_OPTIONS.map(opt => (
-                  <div key={opt.value} className="flex items-center space-x-2">
+                  <div key={opt.value} className="flex items-center space-x-2 p-2 border rounded-md hover:bg-gray-50">
                     <RadioGroupItem value={opt.value} id={opt.value} />
-                    <Label htmlFor={opt.value}>{opt.label}</Label>
+                    <Label 
+                      htmlFor={opt.value} 
+                      className="cursor-pointer flex-1 text-sm"
+                    >
+                      {opt.label}
+                    </Label>
                   </div>
                 ))}
               </RadioGroup>
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Saving...' : 'Update Account'}</Button>
+            
+            <div className="pt-2">
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={loading}
+              >
+                {loading ? 'Updating...' : 'Update Account'}
+              </Button>
+            </div>
           </form>
         )}
       </DialogContent>

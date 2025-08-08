@@ -6,8 +6,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { toast } from 'sonner'
 import supabase from '@/lib/supabase'
 
-export default function UserCreateDialog({ onUserCreated }) {
-  const [open, setOpen] = useState(false)
+export default function UserCreateDialog({ open, onUserCreated, onClose }) {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -134,82 +133,228 @@ export default function UserCreateDialog({ onUserCreated }) {
     }
     toast.success('User created successfully!')
     clearFields()
-    setOpen(false)
     setLoading(false)
     if (onUserCreated) onUserCreated()
+    if (onClose) onClose()
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button onClick={() => setOpen(true)} className="mb-6">Create User</Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-lg w-full">
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose && onClose()}>
+      <DialogContent className="max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><User size={24} /> Create User</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <User size={20} /> Create User
+          </DialogTitle>
           <DialogClose asChild>
-            <button onClick={() => { setOpen(false); clearFields(); }} className="absolute top-2 right-2 text-gray-500 hover:text-black">&times;</button>
+            <button 
+              onClick={() => { clearFields(); if (onClose) onClose(); }} 
+              className="absolute top-3 right-3 text-gray-500 hover:text-black text-xl leading-none"
+            >
+              &times;
+            </button>
           </DialogClose>
         </DialogHeader>
-        {error && <div className="mb-4 text-red-500">{error}</div>}
+        
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+        
+        {/* Step 1: Authentication */}
         {step === 1 && (
           <form onSubmit={handleSignup} className="space-y-4">
-            <div>
-              <label className="mb-1 font-medium flex items-center gap-2"><Mail size={16}/> Email</label>
-              <Input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="Email" />
+            <div className="text-sm text-gray-600 mb-4">
+              Step 1 of 2: User Authentication
             </div>
+            
             <div>
-              <label className="mb-1 font-medium flex items-center gap-2"><Lock size={16}/> Password</label>
-              <Input type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Password" />
+              <label className="mb-2 font-medium text-sm flex items-center gap-2">
+                <Mail size={16}/> Email Address
+              </label>
+              <Input 
+                type="email" 
+                value={email} 
+                onChange={e => setEmail(e.target.value)} 
+                required 
+                placeholder="Enter email address"
+                className="w-full" 
+              />
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Signing up...' : 'Next'}</Button>
+            
+            <div>
+              <label className="mb-2 font-medium text-sm flex items-center gap-2">
+                <Lock size={16}/> Password
+              </label>
+              <Input 
+                type="password" 
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                required 
+                placeholder="Enter password"
+                className="w-full" 
+              />
+            </div>
+            
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={loading}
+            >
+              {loading ? 'Creating Account...' : 'Next Step →'}
+            </Button>
           </form>
         )}
+        
+        {/* Step 2: Profile Information */}
         {step === 2 && (
           <form onSubmit={handleProfile} className="space-y-4">
-            <div className="flex gap-4">
-              <div className="w-1/2">
-                <label className="mb-1 font-medium flex items-center gap-2"><User size={16}/> First Name</label>
-                <Input value={firstName} onChange={e => setFirstName(e.target.value)} required placeholder="First Name" />
+            <div className="text-sm text-gray-600 mb-4">
+              Step 2 of 2: Profile Information
+            </div>
+            
+            {/* Name Fields - Stack on mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="mb-2 font-medium text-sm flex items-center gap-2">
+                  <User size={16}/> First Name
+                </label>
+                <Input 
+                  value={firstName} 
+                  onChange={e => setFirstName(e.target.value)} 
+                  required 
+                  placeholder="First Name"
+                  className="w-full" 
+                />
               </div>
-              <div className="w-1/2">
-                <label className="mb-1 font-medium flex items-center gap-2"><User size={16}/> Last Name</label>
-                <Input value={lastName} onChange={e => setLastName(e.target.value)} required placeholder="Last Name" />
+              <div>
+                <label className="mb-2 font-medium text-sm flex items-center gap-2">
+                  <User size={16}/> Last Name
+                </label>
+                <Input 
+                  value={lastName} 
+                  onChange={e => setLastName(e.target.value)} 
+                  required 
+                  placeholder="Last Name"
+                  className="w-full" 
+                />
               </div>
             </div>
-            <div className="flex gap-4">
-              <div className="w-1/2">
-                <label className="mb-1 font-medium flex items-center gap-2"><Phone size={16}/> Phone Number</label>
-                <Input value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} required placeholder="Phone Number" />
+            
+            {/* Phone Fields - Stack on mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="mb-2 font-medium text-sm flex items-center gap-2">
+                  <Phone size={16}/> Phone Number
+                </label>
+                <Input 
+                  value={phoneNumber} 
+                  onChange={e => setPhoneNumber(e.target.value)} 
+                  required 
+                  placeholder="Phone Number"
+                  className="w-full" 
+                />
               </div>
-              <div className="w-1/2">
-                <label className="mb-1 font-medium flex items-center gap-2"><Phone size={16}/> Alternate Phone</label>
-                <Input value={alternatePhone} onChange={e => setAlternatePhone(e.target.value)} placeholder="Alternate Phone" />
+              <div>
+                <label className="mb-2 font-medium text-sm flex items-center gap-2">
+                  <Phone size={16}/> Alternate Phone
+                </label>
+                <Input 
+                  value={alternatePhone} 
+                  onChange={e => setAlternatePhone(e.target.value)} 
+                  placeholder="Alternate Phone (Optional)"
+                  className="w-full" 
+                />
               </div>
             </div>
+            
+            {/* Address */}
             <div>
-              <label className="mb-1 font-medium flex items-center gap-2"><MapPin size={16}/> Address</label>
-              <Input value={address} onChange={e => setAddress(e.target.value)} required placeholder="Address" />
+              <label className="mb-2 font-medium text-sm flex items-center gap-2">
+                <MapPin size={16}/> Address
+              </label>
+              <Input 
+                value={address} 
+                onChange={e => setAddress(e.target.value)} 
+                required 
+                placeholder="Complete address"
+                className="w-full" 
+              />
             </div>
+            
+            {/* Landmark */}
             <div>
-              <label className="mb-1 font-medium flex items-center gap-2"><Landmark size={16}/> Notable Landmark</label>
-              <Input value={notableLandmark} onChange={e => setNotableLandmark(e.target.value)} placeholder="Landmark" />
+              <label className="mb-2 font-medium text-sm flex items-center gap-2">
+                <Landmark size={16}/> Notable Landmark
+              </label>
+              <Input 
+                value={notableLandmark} 
+                onChange={e => setNotableLandmark(e.target.value)} 
+                placeholder="Landmark near address"
+                className="w-full" 
+              />
             </div>
-            <div className="flex gap-4">
-              <div className="w-1/2">
-                <label className="mb-1 font-medium flex items-center gap-2"><Calendar size={16}/> Date of Birth</label>
-                <Input type="date" value={dateOfBirth} onChange={e => setDateOfBirth(e.target.value)} required />
+            
+            {/* DOB and NIN - Stack on mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="mb-2 font-medium text-sm flex items-center gap-2">
+                  <Calendar size={16}/> Date of Birth
+                </label>
+                <Input 
+                  type="date" 
+                  value={dateOfBirth} 
+                  onChange={e => setDateOfBirth(e.target.value)} 
+                  required
+                  className="w-full" 
+                />
               </div>
-              <div className="w-1/2">
-                <label className="mb-1 font-medium flex items-center gap-2"><FileText size={16}/> NIN</label>
-                <Input value={nin} onChange={e => setNin(e.target.value)} placeholder="NIN" />
+              <div>
+                <label className="mb-2 font-medium text-sm flex items-center gap-2">
+                  <FileText size={16}/> NIN
+                </label>
+                <Input 
+                  value={nin} 
+                  onChange={e => setNin(e.target.value)} 
+                  placeholder="11-digit NIN"
+                  className="w-full" 
+                />
               </div>
             </div>
+            
+            {/* Passport Photo */}
             <div>
-              <label className="mb-1 font-medium flex items-center gap-2"><LucideImage size={16}/> Passport Photo</label>
-              <Input type="file" accept="image/*" onChange={e => setPassport(e.target.files[0])} required />
+              <label className="mb-2 font-medium text-sm flex items-center gap-2">
+                <LucideImage size={16}/> Passport Photo
+              </label>
+              <Input 
+                type="file" 
+                accept="image/*" 
+                onChange={e => setPassport(e.target.files[0])} 
+                required
+                className="w-full" 
+              />
+              <p className="text-xs text-gray-500 mt-1">Upload a clear passport photograph</p>
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>{loading ? 'Saving...' : 'Create User'}</Button>
+            
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <Button 
+                type="button"
+                variant="outline" 
+                onClick={() => setStep(1)}
+                className="w-full sm:w-auto"
+              >
+                ← Back
+              </Button>
+              <Button 
+                type="submit" 
+                className="w-full sm:flex-1" 
+                disabled={loading}
+              >
+                {loading ? 'Creating User...' : 'Create User'}
+              </Button>
+            </div>
           </form>
         )}
       </DialogContent>

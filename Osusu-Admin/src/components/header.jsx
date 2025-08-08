@@ -4,7 +4,7 @@ import supabase from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
-function Header({ onToggleSidebar }) {
+function Header() {
   const navigate = useNavigate();
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -19,9 +19,9 @@ function Header({ onToggleSidebar }) {
         <div className='flex items-center gap-2 relative w-[35%] h-[35px]'>
             <FaSearch color='grey' className='absolute top-2.5 left-4'/>
             <input className='border-2 rounded-[20px] border-gray-300 pl-[40px] w-full text-start p-[5px]' type="text" placeholder='search'/>
-            <button onClick={onToggleSidebar} className='ml-2 p-2 rounded-full hover:bg-gray-200 transition-colors'>
+            {/* <button onClick={onToggleSidebar} className='ml-2 p-2 rounded-full hover:bg-gray-200 transition-colors'>
               <FaBars size={20} />
-            </button>
+            </button> */}
             <Button onClick={handleLogout} className='ml-4'>Logout</Button>
         </div>
     </div>
