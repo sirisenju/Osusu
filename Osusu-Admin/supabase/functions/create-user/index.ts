@@ -30,9 +30,7 @@ serve(async (req) => {
       { global: { headers: { Authorization: `Bearer ${token}` } } }
     )
 
-    const {
-      data: { user }
-    } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser()
 
     const { data: adminData, error: adminError } = await supabaseAdmin
       .from('admins')

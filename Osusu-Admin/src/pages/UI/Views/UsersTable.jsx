@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { MoreVertical, User, Mail, Phone, Calendar, CreditCard, FileText, Check, X, Image } from 'lucide-react'
+import { MoreVertical, User, Mail, Phone, Calendar, CreditCard, FileText, Check, Image } from 'lucide-react'
 import CreateAccountDialog from './CreateAccountDialog'
 import EditAccountDialog from './EditAccountDialog'
 
@@ -125,8 +125,8 @@ export default function UsersTable({ users, loading, onAccountCreated }) {
                 </TableCell>
                 <TableCell>
                   <div className="space-y-1">
-                    <Badge variant={user.email ? "default" : "secondary"} className="text-xs">
-                      {user.email ? 'Active' : 'Inactive'}
+                    <Badge variant="default" className="text-xs">
+                      Verified
                     </Badge>
                     {userHasAccount(user) && (
                       <Badge variant="outline" className="text-xs flex items-center">
@@ -249,15 +249,11 @@ export default function UsersTable({ users, loading, onAccountCreated }) {
               {/* Status Badges */}
               <div className="flex flex-wrap gap-2">
                 <Badge 
-                  variant={user.email ? "default" : "secondary"} 
+                  variant="default" 
                   className="text-xs flex items-center"
                 >
-                  {user.email ? (
-                    <Check className="h-3 w-3 mr-1" />
-                  ) : (
-                    <X className="h-3 w-3 mr-1" />
-                  )}
-                  {user.email ? 'Active' : 'Inactive'}
+                  <Check className="h-3 w-3 mr-1" />
+                  Verified
                 </Badge>
                 {userHasAccount(user) && (
                   <Badge variant="outline" className="text-xs flex items-center">

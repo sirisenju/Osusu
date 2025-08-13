@@ -13,10 +13,17 @@ import {
   Edit,
   Trash2,
   Search,
-  Filter
+  Filter,
+  Phone,
+  Mail,
+  MapPin,
+  Calendar,
+  User
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import CreateAdminDialog from './createAdminDialog';
 import EditAdminDialog from './editAdminDialog';
 import supabase from '../../../../lib/supabase';
@@ -29,6 +36,7 @@ function AdminView() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   
   // Stats
@@ -71,22 +79,25 @@ function AdminView() {
   const fetchAdmins = async () => {
     setLoading(true);
     try {
-      // First, let's try a simple query to see if we can get admin records
-      const { data: adminData, error } = await supabase
-        .from('admins')
-        .select('*')
+      // Query admin_profiles table to get the actual admin data
+      const { data: adminProfiles, error: profilesError } = await supabase
+        .from('admin_profiles')
+        .select(`
+          id,
+          full_name,
+          email,
+          phone_number,
+          nin,
+          address,
+          created_at
+        `)
         .order('created_at', { ascending: false });
 
-      console.log('Raw admin data:', adminData); // Debug log
-      console.log('Admin query error:', error); // Debug log
+      console.log('Admin profiles data:', adminProfiles); // Debug log
+      console.log('Admin profiles error:', profilesError); // Debug log
 
-      if (error) {
-        console.error('Error fetching admins:', error);
-        return;
-      }
-
-      if (!adminData || adminData.length === 0) {
-        console.log('No admins found in database');
+      if (profilesError) {
+        console.error('Error fetching admin profiles:', profilesError);
         setAdmins([]);
         setTotalAdmins(0);
         setActiveAdmins(0);
@@ -95,35 +106,78 @@ function AdminView() {
         return;
       }
 
-      // Debug: Let's see what fields are actually available
-      console.log('Sample admin record structure:', adminData[0]); // Debug log
-      console.log('Available fields:', Object.keys(adminData[0] || {})); // Debug log
+      if (!adminProfiles || adminProfiles.length === 0) {
+        console.log('No admin profiles found in database');
+        setAdmins([]);
+        setTotalAdmins(0);
+        setActiveAdmins(0);
+        setSuperAdmins(0);
+        setInactiveAdmins(0);
+        return;
+      }
 
-      // For now, let's transform the data without the profiles join
-      const transformedAdmins = adminData.map(admin => ({
-        id: admin.id,
-        uuid: admin.id, // Use id as uuid since uuid field might not exist
-        first_name: 'Admin', // We'll update this once we fix the profiles join
-        last_name: admin.id ? admin.id.toString().substring(0, 8) : 'User', // Use first 8 chars of ID as placeholder
-        email: `admin-${admin.id}@system.com`, // Placeholder email
-        phone_number: null,
-        role: admin.role || 'admin',
-        status: admin.verified ? 'active' : 'inactive',
-        verified: admin.verified || false,
-        created_at: admin.created_at,
-        last_login: null,
-        permissions: getPermissionsByRole(admin.role || 'admin')
-      }));
+      // Now get the admin records to get role, status and other information
+      // Link admin_profiles.id with admins.id (both are uuid strings)
+      const profileIds = adminProfiles.map(profile => profile.id);
+      const { data: adminData, error: adminError } = await supabase
+        .from('admins')
+        .select('id, role, verified, status, privileges, created_by, created_at')
+        .in('id', profileIds)
+        .order('created_at', { ascending: false });
+
+      console.log('Admin data:', adminData); // Debug log
+      console.log('Admin error:', adminError); // Debug log
+
+      // Create a map of admin data by id for easy lookup
+      const adminMap = {};
+      if (adminData && !adminError) {
+        adminData.forEach(admin => {
+          adminMap[admin.id] = admin;
+        });
+      }
+
+      // Transform and merge the data
+      const transformedAdmins = adminProfiles.map(profile => {
+        const adminInfo = adminMap[profile.id] || {}; // Use profile.id to match admin.id
+        const nameParts = profile.full_name ? profile.full_name.split(' ') : ['Admin', 'User'];
+        
+        return {
+          id: profile.id, // Use profile.id as the main id (which is a uuid)
+          uuid: profile.id, // Use profile.id as uuid for compatibility
+          first_name: nameParts[0] || 'Admin',
+          last_name: nameParts.slice(1).join(' ') || 'User',
+          full_name: profile.full_name || 'Admin User',
+          email: profile.email || 'No email',
+          phone_number: profile.phone_number,
+          nin: profile.nin,
+          address: profile.address,
+          avatar_url: profile.avatar_url,
+          role: adminInfo.role || 'admin',
+          status: adminInfo.status || 'inactive', // Use status field directly from admins table
+          verified: adminInfo.verified || false,
+          privileges: adminInfo.privileges || {},
+          created_by: adminInfo.created_by,
+          created_at: profile.created_at,
+          last_login: null, // This would need to come from a sessions table if tracked
+          permissions: getPermissionsFromPrivileges(adminInfo.privileges || {})
+        };
+      });
 
       console.log('Transformed admins:', transformedAdmins); // Debug log
+      
+      // Debug: Show all admin roles
+      console.log('Admin roles found:', transformedAdmins.map(admin => ({
+        name: admin.full_name,
+        role: admin.role
+      })));
 
       setAdmins(transformedAdmins);
       
-      // Calculate stats
+      // Calculate stats based on actual status values
       setTotalAdmins(transformedAdmins.length);
-      setActiveAdmins(transformedAdmins.filter(admin => admin.verified).length);
-      setSuperAdmins(transformedAdmins.filter(admin => admin.role === 'super_admin').length);
-      setInactiveAdmins(transformedAdmins.filter(admin => !admin.verified).length);
+      setActiveAdmins(transformedAdmins.filter(admin => admin.status === 'active').length);
+      setSuperAdmins(transformedAdmins.filter(admin => admin.role === 'superadmin').length);
+      setInactiveAdmins(transformedAdmins.filter(admin => admin.status === 'inactive').length);
       
     } catch (error) {
       console.error('Error fetching admins:', error);
@@ -132,19 +186,29 @@ function AdminView() {
     }
   };
 
-  // Helper function to get permissions based on role
-  const getPermissionsByRole = (role) => {
-    switch (role) {
-      case 'super_admin':
-        return ['users', 'groups', 'payments', 'settings', 'admin_management'];
-      case 'admin':
-        return ['users', 'groups', 'payments'];
-      case 'moderator':
-        return ['users', 'groups'];
-      default:
-        return ['users'];
+  // Helper function to get permissions from privileges object
+  const getPermissionsFromPrivileges = (privileges) => {
+    if (!privileges || typeof privileges !== 'object') {
+      return [];
     }
+    
+    // Extract keys where value is true
+    return Object.keys(privileges).filter(key => privileges[key] === true);
   };
+
+  // Helper function to get permissions based on role (fallback)
+  // const getPermissionsByRole = (role) => {
+  //   switch (role) {
+  //     case 'super_admin':
+  //       return ['can_manage_users', 'can_create_groups', 'can_verify_payments', 'can_assign_slots', 'can_manage_admins'];
+  //     case 'admin':
+  //       return ['can_manage_users', 'can_create_groups', 'can_verify_payments'];
+  //     case 'moderator':
+  //       return ['can_manage_users', 'can_create_groups'];
+  //     default:
+  //       return ['can_manage_users'];
+  //   }
+  // };
 
   const handleCreateAdmin = () => {
     setShowCreateDialog(true);
@@ -155,19 +219,35 @@ function AdminView() {
     setShowEditDialog(true);
   };
 
+  const handleViewDetails = (admin) => {
+    setSelectedAdmin(admin);
+    setShowDetailsDialog(true);
+  };
+
   const handleDeleteAdmin = async (adminId) => {
     if (window.confirm('Are you sure you want to delete this admin? This action cannot be undone.')) {
       try {
-        // Delete admin from admins table
-        const { error: deleteError } = await supabase
+        // Delete from both tables
+        const { error: adminError } = await supabase
           .from('admins')
           .delete()
           .eq('id', adminId);
 
-        if (deleteError) {
-          console.error('Error deleting admin:', deleteError);
+        if (adminError) {
+          console.error('Error deleting from admins table:', adminError);
           alert('Failed to delete admin. Please try again.');
           return;
+        }
+
+        // Delete from admin_profiles table (use id field)
+        const { error: profileError } = await supabase
+          .from('admin_profiles')
+          .delete()
+          .eq('id', adminId);
+
+        if (profileError) {
+          console.error('Error deleting from admin_profiles table:', profileError);
+          // Continue anyway since the main admin record is deleted
         }
 
         // Refresh the admin list
@@ -185,13 +265,19 @@ function AdminView() {
 
   const handleToggleVerification = async (adminId, currentStatus) => {
     try {
+      // Toggle between active and inactive status
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      
       const { error } = await supabase
         .from('admins')
-        .update({ verified: !currentStatus })
+        .update({ 
+          status: newStatus,
+          verified: newStatus === 'active' // Keep verified in sync with status
+        })
         .eq('id', adminId);
 
       if (error) {
-        console.error('Error updating admin verification:', error);
+        console.error('Error updating admin status:', error);
         alert('Failed to update admin status. Please try again.');
         return;
       }
@@ -200,7 +286,7 @@ function AdminView() {
       await fetchAdmins();
       
     } catch (error) {
-      console.error('Error updating admin verification:', error);
+      console.error('Error updating admin status:', error);
       alert('Failed to update admin status. Please try again.');
     }
   };
@@ -214,12 +300,21 @@ function AdminView() {
     const matchesRole = roleFilter === 'all' || admin.role === roleFilter;
     const matchesStatus = statusFilter === 'all' || admin.status === statusFilter;
     
+    // Debug log for role filtering
+    if (roleFilter === 'superadmin') {
+      console.log('Filtering for superadmin:', {
+        adminName: admin.full_name,
+        adminRole: admin.role,
+        matchesRole: matchesRole
+      });
+    }
+    
     return matchesSearch && matchesRole && matchesStatus;
   });
 
   const getRoleBadgeColor = (role) => {
     switch (role) {
-      case 'super_admin':
+      case 'superadmin':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'admin':
         return 'bg-blue-100 text-blue-800 border-blue-200';
@@ -326,7 +421,7 @@ function AdminView() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="super_admin">Super Admin</SelectItem>
+                <SelectItem value="superadmin">Super Admin</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="moderator">Moderator</SelectItem>
               </SelectContent>
@@ -382,15 +477,14 @@ function AdminView() {
                     <TableHead className="font-semibold text-xs lg:text-sm hidden sm:table-cell">Email</TableHead>
                     <TableHead className="font-semibold text-xs lg:text-sm">Role</TableHead>
                     <TableHead className="font-semibold text-xs lg:text-sm hidden md:table-cell">Status</TableHead>
-                    <TableHead className="font-semibold text-xs lg:text-sm hidden lg:table-cell">Last Login</TableHead>
-                    <TableHead className="font-semibold text-xs lg:text-sm hidden xl:table-cell">Created</TableHead>
+                    <TableHead className="font-semibold text-xs lg:text-sm hidden lg:table-cell">Created</TableHead>
                     <TableHead className="font-semibold text-xs lg:text-sm text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredAdmins.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-gray-500 text-sm">
+                      <TableCell colSpan={6} className="text-center py-8 text-gray-500 text-sm">
                         No admins found matching your criteria
                       </TableCell>
                     </TableRow>
@@ -417,9 +511,6 @@ function AdminView() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-sm text-gray-600 hidden lg:table-cell">
-                          {formatDate(admin.last_login)}
-                        </TableCell>
-                        <TableCell className="text-sm text-gray-600 hidden xl:table-cell">
                           {formatDate(admin.created_at)}
                         </TableCell>
                         <TableCell>
@@ -427,11 +518,20 @@ function AdminView() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleToggleVerification(admin.id, admin.verified)}
-                              className={`h-8 w-8 p-0 ${admin.verified ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50' : 'text-green-600 hover:text-green-700 hover:bg-green-50'}`}
-                              title={admin.verified ? 'Deactivate Admin' : 'Verify Admin'}
+                              onClick={() => handleViewDetails(admin)}
+                              className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              title="View Details"
                             >
-                              {admin.verified ? <ShieldCheck className="h-3 w-3" /> : <Shield className="h-3 w-3" />}
+                              <Eye className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleToggleVerification(admin.id, admin.status)}
+                              className={`h-8 w-8 p-0 ${admin.status === 'active' ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50' : 'text-green-600 hover:text-green-700 hover:bg-green-50'}`}
+                              title={admin.status === 'active' ? 'Deactivate Admin' : 'Activate Admin'}
+                            >
+                              {admin.status === 'active' ? <ShieldCheck className="h-3 w-3" /> : <Shield className="h-3 w-3" />}
                             </Button>
                             <Button
                               variant="ghost"
@@ -522,6 +622,157 @@ function AdminView() {
           admin={selectedAdmin}
           onAdminUpdated={fetchAdmins}
         />
+      )}
+
+      {/* Admin Details Dialog */}
+      {showDetailsDialog && selectedAdmin && (
+        <Dialog open={showDetailsDialog} onOpenChange={() => setShowDetailsDialog(false)}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-base lg:text-lg">
+                <User className="h-4 w-4 lg:h-5 lg:w-5" />
+                Admin Details
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              {/* Profile Section */}
+              <div className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-lg">
+                <div className="flex justify-center sm:justify-start">
+                  <Avatar className="w-20 h-20">
+                    <AvatarImage 
+                      src={selectedAdmin.avatar_url} 
+                      alt={selectedAdmin.full_name}
+                    />
+                    <AvatarFallback className="text-lg font-semibold bg-blue-100 text-blue-800">
+                      {selectedAdmin.full_name 
+                        ? selectedAdmin.full_name.split(' ').map(n => n[0]).join('').toUpperCase()
+                        : 'AD'
+                      }
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                
+                <div className="flex-1 text-center sm:text-left">
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    {selectedAdmin.full_name || 'Admin User'}
+                  </h3>
+                  <Badge variant="outline" className={`mt-1 ${getRoleBadgeColor(selectedAdmin.role)}`}>
+                    {selectedAdmin.role.replace('_', ' ').toUpperCase()}
+                  </Badge>
+                  <div className="mt-2">
+                    <Badge variant="outline" className={`${getStatusBadgeColor(selectedAdmin.status)}`}>
+                      {selectedAdmin.status.toUpperCase()}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-900 border-b pb-2">Contact Information</h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <Mail className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Email</p>
+                      <p className="text-sm text-gray-600">{selectedAdmin.email || 'Not provided'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <Phone className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Phone Number</p>
+                      <p className="text-sm text-gray-600">{selectedAdmin.phone_number || 'Not provided'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedAdmin.address && (
+                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                    <MapPin className="h-5 w-5 text-gray-500 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Address</p>
+                      <p className="text-sm text-gray-600">{selectedAdmin.address}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Additional Information */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-900 border-b pb-2">Additional Information</h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {selectedAdmin.nin && (
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm font-medium text-gray-700">NIN</p>
+                      <p className="text-sm text-gray-600">{selectedAdmin.nin}</p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <Calendar className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Member Since</p>
+                      <p className="text-sm text-gray-600">{formatDate(selectedAdmin.created_at)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Permissions */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-900 border-b pb-2">Privileges</h4>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {selectedAdmin.permissions && selectedAdmin.permissions.length > 0 ? (
+                    selectedAdmin.permissions.map((permission) => (
+                      <div key={permission} className="flex items-center gap-2 p-2 bg-green-50 rounded border border-green-200">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-sm font-medium text-green-800">
+                          {permission.replace('can_', '').replace('_', ' ').split(' ').map(word => 
+                            word.charAt(0).toUpperCase() + word.slice(1)
+                          ).join(' ')}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-full text-sm text-gray-500 p-4 text-center bg-gray-50 rounded-lg">
+                      No privileges assigned
+                    </div>
+                  )}
+                </div>
+                
+                {/* Raw privileges object for debugging */}
+                {selectedAdmin.privileges && Object.keys(selectedAdmin.privileges).length > 0 && (
+                  <div className="mt-4">
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-gray-600">Raw Privileges Data</summary>
+                      <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto">
+                        {JSON.stringify(selectedAdmin.privileges, null, 2)}
+                      </pre>
+                    </details>
+                  </div>
+                )}
+              </div>
+
+              {/* System Information */}
+              <div className="space-y-4">
+                <h4 className="text-lg font-semibold text-gray-900 border-b pb-2">System Information</h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm font-medium text-gray-700">User ID</p>
+                    <p className="text-xs text-gray-600 font-mono">{selectedAdmin.uuid}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

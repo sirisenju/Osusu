@@ -8,6 +8,7 @@ import {
   LogOut,
   ChevronUp,
   User2,
+  FileText,
 } from "lucide-react"
 
 import {
@@ -54,6 +55,12 @@ const items = [
     url: "#",
     icon: CreditCard,
     key: "payments",
+  },
+  {
+    title: "Reports",
+    url: "#",
+    icon: FileText,
+    key: "reports",
   },
   {
     title: "Settings",

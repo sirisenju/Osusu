@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Search, Filter, Plus, Users, UserCheck, UserX, Calendar } from 'lucide-react'
+import { Search, Filter, Plus, Users, UserCheck, Calendar } from 'lucide-react'
 import UserCreateDialog from './UserCreateDialog'
 import UsersTable from './UsersTable'
 
@@ -32,8 +32,7 @@ function UsersPage() {
   // Calculate statistics
   const stats = {
     total: users.length,
-    verified: users.filter(user => user.email_verified).length,
-    unverified: users.filter(user => !user.email_verified).length,
+    verified: users.length, // All users are verified
     thisMonth: users.filter(user => {
       const userDate = new Date(user.created_at)
       const now = new Date()
@@ -48,8 +47,7 @@ function UsersPage() {
                          user.phone?.includes(searchTerm)
     
     const matchesFilter = filterStatus === 'all' ||
-                         (filterStatus === 'verified' && user.email_verified) ||
-                         (filterStatus === 'unverified' && !user.email_verified)
+                         (filterStatus === 'verified' && true) // All users are verified
     
     return matchesSearch && matchesFilter
   })
@@ -72,7 +70,7 @@ function UsersPage() {
       </div>
 
       {/* Stats Cards - Responsive Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm sm:text-base font-medium flex items-center gap-2">
@@ -90,7 +88,7 @@ function UsersPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm sm:text-base font-medium flex items-center gap-2">
               <UserCheck className="h-4 w-4 text-green-600" />
-              <span className="hidden sm:inline">Verified</span>
+              <span className="hidden sm:inline">Verified Users</span>
               <span className="sm:hidden">Verified</span>
             </CardTitle>
           </CardHeader>
@@ -99,20 +97,7 @@ function UsersPage() {
           </CardContent>
         </Card>
         
-        <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm sm:text-base font-medium flex items-center gap-2">
-              <UserX className="h-4 w-4 text-orange-600" />
-              <span className="hidden sm:inline">Unverified</span>
-              <span className="sm:hidden">Pending</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-xl sm:text-2xl font-bold text-orange-700">{stats.unverified}</div>
-          </CardContent>
-        </Card>
-        
-        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 col-span-2 lg:col-span-1">
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 sm:col-span-2 lg:col-span-1">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm sm:text-base font-medium flex items-center gap-2">
               <Calendar className="h-4 w-4 text-purple-600" />
@@ -155,14 +140,6 @@ function UsersPage() {
                 className="whitespace-nowrap"
               >
                 Verified
-              </Button>
-              <Button
-                variant={filterStatus === 'unverified' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setFilterStatus('unverified')}
-                className="whitespace-nowrap"
-              >
-                Unverified
               </Button>
             </div>
           </div>

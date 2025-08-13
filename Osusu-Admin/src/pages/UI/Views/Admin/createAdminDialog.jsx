@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { UserPlus, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'sonner';
+import supabase from '@/lib/supabase';
 
 function CreateAdminDialog({ open, onClose, onAdminCreated }) {
   const [formData, setFormData] = useState({
@@ -15,6 +17,9 @@ function CreateAdminDialog({ open, onClose, onAdminCreated }) {
     email: '',
     password: '',
     confirmPassword: '',
+    phoneNumber: '',
+    nin: '',
+    address: '',
     role: 'admin',
     status: 'active',
     permissions: []
@@ -25,13 +30,11 @@ function CreateAdminDialog({ open, onClose, onAdminCreated }) {
   const [errors, setErrors] = useState({});
 
   const availablePermissions = [
-    { id: 'users', label: 'User Management', description: 'View, create, edit, and delete users' },
-    { id: 'groups', label: 'Group Management', description: 'Manage groups and group memberships' },
-    { id: 'payments', label: 'Payment Management', description: 'View and manage payments' },
-    { id: 'accounts', label: 'Account Management', description: 'Manage user accounts and statuses' },
-    { id: 'settings', label: 'System Settings', description: 'Access system configuration' },
-    { id: 'reports', label: 'Reports & Analytics', description: 'Generate and view reports' },
-    { id: 'admins', label: 'Admin Management', description: 'Manage other admin accounts' }
+    { id: 'can_manage_users', label: 'User Management', description: 'View, create, edit, and delete users' },
+    { id: 'can_create_groups', label: 'Group Management', description: 'Create and manage groups and group memberships' },
+    { id: 'can_verify_payments', label: 'Payment Verification', description: 'Verify and manage payment transactions' },
+    { id: 'can_assign_slots', label: 'Slot Assignment', description: 'Assign slots to users and manage slot allocations' },
+    { id: 'can_manage_admins', label: 'Admin Management', description: 'Manage other admin accounts and permissions' }
   ];
 
   const handleInputChange = (field, value) => {
@@ -91,6 +94,12 @@ function CreateAdminDialog({ open, onClose, onAdminCreated }) {
       newErrors.role = 'Please select a role';
     }
 
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = 'Phone number is required';
+    } else if (!/^[0-9+\-\s()]+$/.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = 'Please enter a valid phone number';
+    }
+
     if (formData.permissions.length === 0) {
       newErrors.permissions = 'Please select at least one permission';
     }
@@ -107,13 +116,54 @@ function CreateAdminDialog({ open, onClose, onAdminCreated }) {
     }
 
     setLoading(true);
+    setErrors({}); // Clear previous errors
     
     try {
-      // TODO: Implement actual admin creation with Supabase
-      console.log('Creating admin with data:', formData);
+      // Get current user session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!session) {
+        throw new Error('You must be logged in to create an admin');
+      }
+
+      // Prepare data for the edge function
+      const adminData = {
+        email: formData.email,
+        password: formData.password,
+        full_name: `${formData.firstName} ${formData.lastName}`,
+        phone_number: formData.phoneNumber,
+        nin: formData.nin || null,
+        address: formData.address || null,
+        role: formData.role,
+        status: formData.status,
+        privileges: formData.permissions.reduce((acc, permission) => {
+          acc[permission] = true;
+          return acc;
+        }, {}),
+        created_by: session.user.id
+      };
+
+      console.log('Creating admin with data:', { ...adminData, password: '[HIDDEN]' });
+
+      // Call the create-admin edge function
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify(adminData)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('Admin creation failed:', result);
+        throw new Error(result.error || result.details || `HTTP ${response.status}: Failed to create admin`);
+      }
+
+      toast.success(`Admin ${formData.firstName} ${formData.lastName} created successfully!`);
+      console.log('Admin created successfully:', result);
       
       // Reset form
       setFormData({
@@ -122,16 +172,23 @@ function CreateAdminDialog({ open, onClose, onAdminCreated }) {
         email: '',
         password: '',
         confirmPassword: '',
+        phoneNumber: '',
+        nin: '',
+        address: '',
         role: 'admin',
         status: 'active',
         permissions: []
       });
       
-      onAdminCreated();
-      onClose();
+      // Call parent callbacks
+      if (onAdminCreated) onAdminCreated();
+      if (onClose) onClose();
+      
     } catch (error) {
       console.error('Error creating admin:', error);
-      setErrors({ submit: 'Failed to create admin. Please try again.' });
+      const errorMessage = error.message || 'Failed to create admin. Please try again.';
+      toast.error(errorMessage);
+      setErrors({ submit: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -145,6 +202,9 @@ function CreateAdminDialog({ open, onClose, onAdminCreated }) {
         email: '',
         password: '',
         confirmPassword: '',
+        phoneNumber: '',
+        nin: '',
+        address: '',
         role: 'admin',
         status: 'active',
         permissions: []
@@ -209,6 +269,46 @@ function CreateAdminDialog({ open, onClose, onAdminCreated }) {
             {errors.email && (
               <p className="text-xs text-red-600">{errors.email}</p>
             )}
+          </div>
+
+          {/* Contact Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="phoneNumber" className="text-sm">Phone Number *</Label>
+              <Input
+                id="phoneNumber"
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                placeholder="Enter phone number"
+                className={`h-9 ${errors.phoneNumber ? 'border-red-500' : ''}`}
+              />
+              {errors.phoneNumber && (
+                <p className="text-xs text-red-600">{errors.phoneNumber}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nin" className="text-sm">NIN (Optional)</Label>
+              <Input
+                id="nin"
+                value={formData.nin}
+                onChange={(e) => handleInputChange('nin', e.target.value)}
+                placeholder="Enter NIN"
+                className="h-9"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address" className="text-sm">Address (Optional)</Label>
+            <Input
+              id="address"
+              value={formData.address}
+              onChange={(e) => handleInputChange('address', e.target.value)}
+              placeholder="Enter address"
+              className="h-9"
+            />
           </div>
 
           {/* Password Fields */}
