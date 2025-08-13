@@ -6,6 +6,7 @@ import GroupView from './Views/Group/groupView';
 import PaymentsView from './Views/Payments/paymentsView';
 import Overview from './Views/AdminOverview/overview';
 import { AdminView } from './Views/Admin';
+import { ReportsView } from './Views/Reports';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
@@ -17,7 +18,8 @@ import {
   LogOut,
   Shield,
   Menu,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -62,6 +64,8 @@ function Dashboard() {
         return <GroupView/>;
       case 'payments':
         return <PaymentsView/>;
+      case 'reports':
+        return <ReportsView/>;
       case 'admin':
         return <AdminView/>;
       case 'settings':
@@ -152,6 +156,14 @@ function Dashboard() {
           >
             <CreditCard className="h-4 w-4" />
             <span className="text-sm">Payments</span>
+          </Button>
+          <Button
+            variant={activeSection === 'reports' ? 'default' : 'ghost'}
+            onClick={() => handleSectionChange('reports')}
+            className={`justify-start gap-2 h-10 ${activeSection === 'reports' ? 'bg-green-600 hover:bg-green-700' : 'hover:bg-green-50'}`}
+          >
+            <FileText className="h-4 w-4" />
+            <span className="text-sm">Reports</span>
           </Button>
           <Button
             variant={activeSection === 'admin' ? 'default' : 'ghost'}
